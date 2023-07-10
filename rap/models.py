@@ -26,15 +26,30 @@ class QueryHfModel(QueryLM):
         self.device = device
         self.n_examples = 1
         self.max_response_length = max_response_length
-
+        self.yes_no = self.tokenizer.encode('Yes No', bos=False, eos=False)[1:]
+         
     def query_LM(self, prompt, **gen_kwargs):
         with torch.no_grad():
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer.sp_model(prompt, return_tensors="pt").to(self.device)
             # print("input length", len(inputs))
             # Generate
             generate_ids = self.model.generate(inputs.input_ids, max_new_tokens=self.max_response_length, **gen_kwargs)
-            text = self.tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+            text = self.tokenizer.sp_model.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         return text
+
+    @torch.no_grad()
+    def query_next_token(self, prompts):
+        if isinstance(prompts, str):
+            prompts = [prompts]
+        ret = []
+        for prompt in prompts:
+            inputs = self.tokenizer.sp_model(prompt, return_tensors="pt").to(self.device); 
+            outputs = self.model.generate(inputs.input_ids, max_new_tokens=1, return_dict_in_generate = True, output_scores = True)
+            ret.append(outputs.scores[0])
+        outputs = torch.cat(ret, dim=0)
+        filtered = outputs[:, self.yes_no]
+        dist = torch.softmax(filtered, dim=-1)
+        return dist
 
 
 class QueryLlama(QueryLM):
