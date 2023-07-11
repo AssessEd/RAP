@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
-from rap.models import QueryLlama, QueryLlamaHF, QueryHfModel
+from rap.models import QueryLlama, QueryHfModel
 from rap.utils.gsm8k import judge_answer_gsm8k, get_gsm8k_dataset
 from rap.gsm8k_mcts import reasoning_mcts_search
 
@@ -23,7 +23,6 @@ from pathlib import Path
 from fairscale.nn.model_parallel.initialize import initialize_model_parallel
 from tqdm import tqdm
 from llama import ModelArgs, Transformer, Tokenizer, LLaMA
-from llama.generation import LLaMAHF
 
 
 def setup_model_parallel() -> Tuple[int, int]:
