@@ -233,7 +233,7 @@ def reasoning_mcts_search(question: str,
     for _ in (pbar := trange(mcts_rollouts, disable=bool(int(os.environ.get("LOCAL_RANK", -1))), position=0)):
         mcts.rollout(root)
         root.print(mcts)
-        max_n, max_r = mcts.max_mean_terminal(root)
+        max_n, max_r = mcts.max_mean_terminal(root) # maximum average reward per path
         trajs.append(traj := max_n.prompt.split('\n\n')[-1])
         output = re.findall('The answer is (.+).*\\.', traj)
         if len(output) == 0:

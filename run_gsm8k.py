@@ -104,7 +104,7 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
               w_exp=1,
               r_alpha=0.5,
               r1_default=1,
-              resume=346,
+              resume=0,
               log_dir=None,
               speedup_confidence_batch_size=2, #None
               ):

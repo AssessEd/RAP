@@ -108,8 +108,8 @@ class MCTS:
         if cur not in self.children or not self.children[cur]:
             return cur, -math.inf
         
-        
-        return max((self.max_mean_terminal(child, sum + cur.reward, cnt + 1) for child in self.children[cur]), key=lambda x: x[1])
+        res = [self.max_mean_terminal(child, sum + cur.reward, cnt + 1) for child in self.children[cur]]
+        return max(res, key=lambda x: x[1])
 
     def _back_propagate(self, path: list[MCTSNode], reward=0.):
         coeff = 1
@@ -117,13 +117,13 @@ class MCTS:
             reward = reward * self.discount + node.reward
             coeff = coeff * self.discount + 1
             if self.aggr_reward == 'mean':
-                c_reward = reward / coeff
+                c_reward = reward / coeff # average of all rewards in the path
             else:
                 c_reward = reward
             if node not in self.N:
                 self.Q[node] = c_reward
             else:
-                self.Q[node] += c_reward
+                self.Q[node] += c_reward # sum of all returns from the node
             self.N[node] += 1
             self.M[node] = max(self.M[node], c_reward)
 
