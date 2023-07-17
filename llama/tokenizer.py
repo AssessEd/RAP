@@ -17,7 +17,8 @@ class Tokenizer:
         # self.sp_model = SentencePieceProcessor(model_file=model_path)
         # logger.info(f"Reloaded SentencePiece model from {model_path}")
         self.sp_model = model
-        self.sp_model.add_special_tokens({'pad_token': '[PAD]'})
+        # self.sp_model.add_special_tokens({'pad_token': '[PAD]'})
+        self.sp_model.pad_token_id = 0
         self.bos_id: int = self.sp_model.bos_token_id
         self.eos_id: int = self.sp_model.eos_token_id
         self.pad_id: int = self.sp_model.pad_token_id 

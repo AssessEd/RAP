@@ -4,4 +4,7 @@ logs/
 *.log
 gpt_sas_plan
 outputs/
+tests/test_files/*
 *.pyc
+*.egg-info
+data/mathreasoning/*

@@ -33,7 +33,7 @@ class QueryHfModel(QueryLM):
             inputs = self.tokenizer.sp_model(prompt, return_tensors="pt").to(self.device)
             # print("input length", len(inputs))
             # Generate
-            generate_ids = self.model.generate(inputs.input_ids, max_new_tokens=self.max_response_length, **gen_kwargs)
+            generate_ids = self.model.generate(input_ids=inputs.input_ids, max_new_tokens=self.max_response_length, **gen_kwargs)
             text = self.tokenizer.sp_model.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         return text
 
@@ -44,7 +44,7 @@ class QueryHfModel(QueryLM):
         ret = []
         for prompt in prompts:
             inputs = self.tokenizer.sp_model(prompt, return_tensors="pt").to(self.device); 
-            outputs = self.model.generate(inputs.input_ids, max_new_tokens=1, return_dict_in_generate = True, output_scores = True)
+            outputs = self.model.generate(input_ids=inputs.input_ids, max_new_tokens=1, return_dict_in_generate = True, output_scores = True)
             ret.append(outputs.scores[0])
         outputs = torch.cat(ret, dim=0)
         filtered = outputs[:, self.yes_no]
