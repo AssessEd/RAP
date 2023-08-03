@@ -2,7 +2,7 @@ import pickle
 import re
 from datetime import datetime
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 from rap.models import QueryLlama, QueryHfModel
 from rap.utils.gsm8k import judge_answer_gsm8k, get_gsm8k_dataset
 from rap.gsm8k_mcts import reasoning_mcts_search
@@ -52,9 +52,9 @@ def load(ckpt_dir: str, tokenizer_path: str, local_rank: int, world_size: int, m
     model_args: ModelArgs = ModelArgs(max_seq_len=2048, max_batch_size=max_batch_size, **params)
     tokenizer = Tokenizer(model_path=tokenizer_path)
     model_args.vocab_size = tokenizer.n_words
-    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
+    torch.set_default_tensor_type(torch.cuda.HalfTensor)
     model = Transformer(model_args).cuda().half()
-    # torch.set_default_tensor_type(torch.FloatTensor)
+    torch.set_default_tensor_type(torch.FloatTensor)
     model.load_state_dict(checkpoint, strict=False)
     generator = LLaMA(model, tokenizer)
     print(f"Loaded in {time.time() - start_time:.2f} seconds")
@@ -72,58 +72,64 @@ def load_llama_hf(ckpt_dir: str, max_batch_size:int, max_response_length:int) ->
     # print("Loading")
     # checkpoint = torch.load(ckpt_path, map_location="cpu")
     # with open(Path(ckpt_dir) / "params.json", "r") as f:
-        # params = json.loads(f.read())
+    #     params = json.loads(f.read())
 
-    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     tokenizer = Tokenizer(AutoTokenizer.from_pretrained(ckpt_dir))    
-    # model = LlamaForCausalLM.from_pretrained(ckpt_dir, load_in_4bit = True, torch_dtype=torch.float16, device_map="auto") #.cuda().half()
-    base_model = LlamaForCausalLM.from_pretrained(ckpt_dir, load_in_4bit=True, torch_dtype=torch.float16, device_map="auto") #.cuda().half()
+    model = LlamaForCausalLM.from_pretrained(ckpt_dir, load_in_4bit = True, torch_dtype=torch.float16, device_map="auto") #.cuda().half()
 
     ## Pretrained 
     # MATH_WEIGHTS = "/media/dev/michaelf/projects/alpaca-lora/experiments/LLaMA7B/2023-07-12-15:10:44/"
-    # GSM_PRETRAINED = "/media/dev/michaelf/projects/alpaca-lora/experiments/LLaMA7B/2023-07-14-20:42:22/checkpoint-2000/"
-    # model = PeftModel.from_pretrained(model, GSM_PRETRAINED, load_in_4bit=True, device_map = "auto")
-
+    GSM_PRETRAINED = "/media/dev/michaelf/projects/alpaca-lora/experiments/LLaMA7B/2023-07-14-20:42:22/checkpoint-2000/"
+    model = PeftModel.from_pretrained(model, GSM_PRETRAINED, load_in_4bit = True, device_map = "auto")
+    model.eval()
+    
     # model_args: ModelArgs = ModelArgs(max_seq_len=2048, max_batch_size=max_batch_size, **params)
     # model_args.vocab_size = tokenizer.n_words
     # tokenizer = Tokenizer(model_path=tokenizer_path)
+    # torch.set_default_tensor_type(torch.cuda.HalfTensor)
     # model = Transformer(model_args).cuda().half()
+    # torch.set_default_tensor_type(torch.FloatTensor)
     # model.load_state_dict(checkpoint, strict=False)
     # generator = QueryHfModel(model, tokenizer, max_batch_size=max_batch_size, max_seq_len=2048)
 
+    base_model = LlamaForCausalLM.from_pretrained(ckpt_dir, load_in_4bit = True, torch_dtype=torch.float16, device_map="auto") #.cuda().half()
     base_model.eval()
     generator = QueryHfModel(base_model, tokenizer, max_response_length=max_response_length, device="cuda:0")
+    finetuned_generator = QueryHfModel(model, tokenizer, max_response_length=max_response_length, device="cuda:0")
     
     print(f"Loaded in {time.time() - start_time:.2f} seconds")
-    return generator, generator
+    return generator, finetuned_generator
 
 
 def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'llama-ckpts/30B',
-              prompts='data/gsm8k/prompts/interactive_examples.json',
-              question_prompts='data/gsm8k/prompts/useful_examples.json',
+            #   prompts='data/gsm8k/prompts/finetuned_prompt_61.json',
+            #   question_prompts='data/gsm8k/prompts/useful_examples_.json',
+              prompts='data/gsm8k/prompts/finetuned_prompt_answers_only.json',
+            #   prompts='data/gsm8k/prompts/interactive_examples.json', 
+              question_prompts='data/gsm8k/prompts/useful_examples.json',              
               max_batch_size=2,
               max_response_length=200,
               mcts_rollouts=10,
               n_sample_subquestion=4,
               n_sample_confidence=8,
               temperature=.6,
-              max_depth=6,
+              max_depth=6, 
               w_exp=1,
               r_alpha=0.5,
               r1_default=1,
               resume=0,
-              seed=0,
               finish=101,
               log_dir=None,
-              node_visit_penalty=1,
-              discount=0.7,
+              node_visit_penalty=0.0,
+              seed=42,
+              discount=0.95,
               speedup_confidence_batch_size=2, 
               ):
-    mcts_type = 'accumulated'
+    mcts_type = 'mean'
     if mcts_type == 'mean':
-        mcts_args = dict(prior=True, aggr_reward='mean', aggr_child='mean')
+        mcts_args = dict(prior=True, aggr_reward='mean', aggr_child='max')
         if log_dir is None:
-            log_dir = f'logsgsm8k_mcts_{llama_ckpt.split("/")[-1]}/{datetime.now().strftime("%Y-%m%d-%H%M")}' + f' temperature={temperature}' + '_deep_run'
+            log_dir = f'logs/gsm8k_mcts_{llama_ckpt.split("/")[-1]}/{datetime.now().strftime("%Y-%m%d-%H%M")}' + f' temperature={temperature}' + 'gsm_pretrained_only'
     elif mcts_type == 'accumulated':
         mcts_args = dict(prior=True, discount=discount, node_visit_penalty=node_visit_penalty, aggr_child='max')
         if log_dir is None:
@@ -132,6 +138,10 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
         raise NotImplementedError
     os.makedirs(log_dir, exist_ok=True)
     params = dict(
+              prompts=prompts,
+              seed=seed,
+              llama_ckpt=llama_ckpt,
+              question_prompts=question_prompts,
               max_batch_size=max_batch_size,
               max_response_length=max_response_length,
               mcts_rollouts=mcts_rollouts,
@@ -171,7 +181,7 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
     # tokenizer_path = os.path.join(os.path.dirname(llama_ckpt), "tokenizer.model")
     # llama = load(llama_ckpt, tokenizer_path, local_rank, world_size, max_batch_size)
     # world_model = QueryLlama(llama, max_response_length=max_response_length, log_file=log_file)
-    world_model, answer_model = load_llama_hf(llama_ckpt, max_batch_size, max_response_length=max_response_length)  # HF - LLaMA
+    world_model, finetuned_world_model = load_llama_hf(llama_ckpt, max_batch_size, max_response_length=max_response_length)  # HF - LLaMA
 
     examples = get_gsm8k_dataset('test')[:finish]
     with open(prompts) as f:
@@ -187,7 +197,7 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
         answer = example['answer']
         answer = re.search('#### .*?([ $.0-9,\\-]+)', answer)
         answer = '' if answer is None else answer[1].replace(',', '').replace(' ', '').replace('$', '')
-        trajs, tree, trees = reasoning_mcts_search(question, prompts, question_prompts, world_model, answer_model,
+        trajs, tree, trees = reasoning_mcts_search(question, prompts, question_prompts, world_model, finetuned_world_model,
                                                    n_sample_subquestion=n_sample_subquestion,
                                                    mcts_rollouts=mcts_rollouts,
                                                    n_sample_confidence=n_sample_confidence,

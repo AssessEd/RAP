@@ -30,13 +30,18 @@ class QueryHfModel(QueryLM):
          
     def query_LM(self, prompt, **gen_kwargs):
         with torch.no_grad():
-            inputs = self.tokenizer.sp_model(prompt, return_tensors="pt").to(self.device)
-            # print("input length", len(inputs))
-            # Generate
-            generate_ids = self.model.generate(input_ids=inputs.input_ids, max_new_tokens=self.max_response_length, **gen_kwargs)
-            text = self.tokenizer.sp_model.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-        return text
+            inputs = self.tokenizer.sp_model(prompt, return_tensors="pt")['input_ids'].to(self.device)
+            generate_ids = self.model.generate(input_ids=inputs, max_new_tokens=self.max_response_length, **gen_kwargs)
+            texts = self.tokenizer.sp_model.batch_decode(generate_ids)#, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+            texts = [text.replace("<s>", "").replace("</s>", "").replace("<unk>", "")[1:] for text in texts]
+        return texts
 
+    def query_LM_answers(self, prompt, **gen_kwargs):
+        with torch.no_grad():
+            inputs = self.tokenizer.sp_model(prompt, return_tensors="pt").to(self.device)
+            return self.model.generate(input_ids=inputs.input_ids, max_new_tokens=self.max_response_length, **gen_kwargs)
+
+    
     @torch.no_grad()
     def query_next_token(self, prompts):
         if isinstance(prompts, str):

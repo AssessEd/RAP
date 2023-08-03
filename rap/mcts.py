@@ -144,3 +144,21 @@ class MCTS:
         else:
             log_n = math.log(self.N[node])
         return max(self.children[node], key=lambda n: self._uct(n, log_n))
+
+class AccumulatedRewardMCTS(MCTS):
+    def __init__(self, w_exp=1, discount=1, prior=False, aggr_child='max', node_visit_penalty=0.5):
+        super().__init__(w_exp=w_exp, discount=discount, prior=prior, aggr_reward="", aggr_child=aggr_child)
+        self.node_visit_penalty = node_visit_penalty
+        
+    def _back_propagate(self, path: list[MCTSNode], reward=0):
+        reward_to_go = reward
+        path_len = len(path) - 1 
+        for idx, node in enumerate(reversed(path)):
+            reward_to_go = reward_to_go * self.discount + node.reward  - self.node_visit_penalty * (path_len - idx) / 10.         
+            if node in self.N:
+                self.Q[node] += reward_to_go 
+            else:
+                self.Q[node] = reward_to_go 
+            self.N[node] += 1
+            self.M[node] = max(self.M[node], reward_to_go)
+        

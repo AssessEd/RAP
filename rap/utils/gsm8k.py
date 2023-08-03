@@ -3,6 +3,25 @@ import re
 import os
 
 
+def judge_answer_gsm8k_pretrained(output, answer):
+    res = re.findall('#### .*?([$.0-9,\\-]+).*', output)
+    if len(res) == 0:
+        res = ''
+    else:
+        res = res[-1].replace(',', '').replace('$', '').replace(' ', '')
+    ret = res
+    if '=' in res:
+        res = res.split('=')[-1]
+    try:
+        res, answer = int(res), int(answer)
+    except ValueError:
+        try:
+            res, answer = float(res), float(answer)
+        except ValueError:
+            pass
+    return ret, res == answer
+
+
 def judge_answer_gsm8k(output, answer):
     output = re.findall('The answer is .*?([$ .0-9,\\-]+).*\\.', output)
     if len(output) == 0:
@@ -22,8 +41,8 @@ def judge_answer_gsm8k(output, answer):
     return ret, output == answer
 
 
-def get_gsm8k_dataset(split):
-    with open(f'data/gsm8k/{split}.jsonl') as f:
+def get_gsm8k_dataset(split, BASE_PATH=''):
+    with open(BASE_PATH + f'data/gsm8k/{split}.jsonl') as f:
         examples = [json.loads(l) for l in f]
 
     for ex in examples:

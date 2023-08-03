@@ -7,7 +7,7 @@ from collections import defaultdict
 from copy import deepcopy
 from tqdm import tqdm, trange
 
-from .mcts import MCTS, MCTSNode
+from .mcts import AccumulatedRewardMCTS, MCTS, MCTSNode
 from .models import QueryLM
 
 
@@ -128,10 +128,26 @@ class ReasoningMCTSNode(MCTSNode):
         return state
 
 
+mcts_algo = dict(
+    mean=MCTS,
+    accumulated=AccumulatedRewardMCTS    
+)
+
+def adjust_prompt(prompt, tokenizer, index):
+    # prompt_shape = tokenizer.sp_model(prompt, return_tensors="pt")['input_ids'].shape
+    # q_id = 1
+    # while prompt_shape[1] >= 1950 and q_id < index-1:
+    #     q_id += 1
+    #     s_idx = re.search(f"Question {q_id}:", prompt).start()
+    #     prompt = prompt[s_idx:]
+    #     prompt_shape = tokenizer.sp_model(prompt, return_tensors="pt")['input_ids'].shape
+    return prompt 
+
 def reasoning_mcts_search(question: str,
                           prompts,
                           question_prompts,
                           world_model: QueryLM,
+                          finetuned_world_model: QueryLM,
                           n_sample_subquestion,
                           temperature,
                           mcts_rollouts,
@@ -141,18 +157,21 @@ def reasoning_mcts_search(question: str,
                           r_alpha,
                           r1_default,
                           eos_token_id,
-                          speedup_confidence_batch_size=None):
+                          speedup_confidence_batch_size=None,
+                          mcts_type='mean',
+                          mcts_args=dict()):
     if speedup_confidence_batch_size is None:
         speedup_confidence_batch_size = n_sample_confidence
     overall_question = re.match('.*((Calculate|calculate|how|How|what|What|Find|find|True or false).*)$', question)[1]
     overall_question = overall_question[0].upper() + overall_question[1:]
     prompt_index = prompts['index']
+    prompt_instruction = prompts.get("input_instruction", "")
 
     def gen_fn(inp, q_inp, depth):
         subquestion_prefix = prompts["subquestion_prefix"].format(depth)
-        agent_input = inp + subquestion_prefix
-        overall_question_output = inp + prompts["overall_question_prefix"].format(depth, overall_question)
-
+        agent_input = prompt_instruction + inp + subquestion_prefix
+        overall_question_output = inp + prompts["overall_question_prefix"].format(depth, overall_question)        
+        agent_input = adjust_prompt(agent_input, world_model.tokenizer, prompts['index'])
         if depth == max_depth:
             agent_output = [overall_question_output]
         else:
@@ -165,11 +184,12 @@ def reasoning_mcts_search(question: str,
         # unique the output
         # set does not guarantee order ; dict guarantees insertion order
         agent_output = list(dict.fromkeys(agent_output))
+        if prompt_instruction:
+            agent_output = [out.replace(prompt_instruction, "") for out in agent_output]
         questions = [o.split(subquestion_prefix)[-1] for o in agent_output]
         r0 = r0_fn(q_inp, questions, depth)
 
         question_output = [q_inp + question_prompts["subquestion_prefix"].format(depth) + q for q in questions]
-
         return agent_output, question_output, r0
 
     def r0_fn(q_inp, questions, depth):
@@ -188,12 +208,13 @@ def reasoning_mcts_search(question: str,
         answer_dict = defaultdict(lambda: [])
         answer_list = []
         sampled = 0
+        world_input = adjust_prompt(world_input, finetuned_world_model.tokenizer, prompts['index'])        
         while sampled < n_sample_confidence:
-            world_output = world_model.query_LM(world_input, do_sample=True,
+            agent_output = finetuned_world_model.query_LM(world_input, do_sample=True,
                                                 num_return_sequences=speedup_confidence_batch_size,
                                                 eos_token_id=eos_token_id, temperature=temperature)
             sampled += speedup_confidence_batch_size
-            for output in world_output:
+            for output in agent_output:
                 result = output.strip().split('\n')[-1]
                 match = re.match(r'.*The answer is .*?([ $.0-9,\-]+).*\.$', result)
                 if match is None:
@@ -224,8 +245,9 @@ def reasoning_mcts_search(question: str,
 
     input_prompts = prompts["input"] + prompts["question_prefix"] + question.strip() + "\n"
     input_question_prompts = question_prompts["input"] + question_prompts["question_prefix"] + question.strip() + "\n"
-
-    mcts = MCTS(w_exp=w_exp, prior=True, aggr_reward='mean', aggr_child='max')
+    mcts_args['w_exp'] = w_exp
+    mcts_class = mcts_algo[mcts_type]
+    mcts = mcts_class(**mcts_args)
     root = ReasoningMCTSNode(input_prompts, input_question_prompts, gen_fn, reward_fn,
                              depth=1, r1_default=r1_default, r_alpha=r_alpha, prompt_index=prompt_index)
     trajs = []
