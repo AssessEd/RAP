@@ -78,16 +78,17 @@ N_EXMP=100
 # python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-0329cleaned_up_greedy_num_demonstrations=6max_depth=15_reversed' --num-examples $N_EXMP
 # python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-0142cleaned_up_greedy_num_demonstrations=10max_depth=15_reversed' --num-examples $N_EXMP
 
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1438cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1529cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1529cleaned_up_rap_num_demonstrations=6max_depth=6_reversed' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1530cleaned_up_rap_num_demonstrations=6max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1438cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1529cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1529cleaned_up_rap_num_demonstrations=6max_depth=6_reversed' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-1530cleaned_up_rap_num_demonstrations=6max_depth=6' --num-examples $N_EXMP
 
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-2309cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-2309cleaned_up_rap_num_demonstrations=6max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-2309cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0803-2309cleaned_up_rap_num_demonstrations=6max_depth=6' --num-examples $N_EXMP
 python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-0155cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-0156cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-0156cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
 python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-0206cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-1406cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
-# python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-1407cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-1406cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
+python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-1407cleaned_up_rap_num_demonstrations=0max_depth=6' --num-examples $N_EXMP
 python -W ignore aggregate_gsm8k_rs_.py --log_dir 'logs/test2/gsm8k_mcts_LLaMA-7B-HF/2023-0804-1419cleaned_up_rap_num_demonstrations=0max_depth=6_reversed' --num-examples $N_EXMP
+ 
