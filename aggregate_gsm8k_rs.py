@@ -18,7 +18,6 @@ def aggregate(root: ReasoningMCTSNode, answer, agg_fcn, params):
     penalty = params.get('penalty', 0)
     discount = params.get('discount', 1)
     reward_type = params.get('mcts_type', 'mean')
-    num_demonstrations = params.get('num_demonstrations', -1)
     def visit(cur: ReasoningMCTSNode):
         reward = cur.reward
         # if type(reward) != float and type(reward) != int:
@@ -31,14 +30,7 @@ def aggregate(root: ReasoningMCTSNode, answer, agg_fcn, params):
             cnt = 0
             while (judge, cnt) in paths:
                 cnt += 1
-            try:     
-                cur_prompt = cur.prompt.split('\n\n')[num_demonstrations]
-            except IndexError:
-                cur_prompt = cur.prompt.split('\n\n')[-1]
-            # except AttributeError:
-            #     cur_prompt = cur.prompt 
-            #     print(cur_prompt)
-            paths[(judge, cnt)] = (cur_prompt, [reward])
+            paths[(judge, cnt)] = (cur.prompt[re.search("Problem 7:", cur.prompt).start():], [reward])
             return [(judge, cnt)]
         cur_list = []
         for child in cur.children:
@@ -52,25 +44,23 @@ def aggregate(root: ReasoningMCTSNode, answer, agg_fcn, params):
     new_paths = dict()
     for path, (prompt, returns) in paths.items():
         # print(path, prompt)
-        rets = returns[::-1]
-        # if "Solution:" in prompt:
-        #     prompt = prompt.split("Solution:")[-1]        
-        #     steps = prompt.split('\n')
-        #     for idx, step in enumerate(steps):
-        #         if idx < len(rets):
-        #             acc_rets = np.mean(rets[idx:])
-        #             step = step + f' REWARD: {rets[idx]:.3f}' + f' RETURN TO GO: {acc_rets:.3f}'
-        #         if idx > 0:                
-        #             steps[idx] = 'Problem:' + step
-        #         else:
-        #             steps[idx] = step
+        rets = returns[::-1]        
+        questions = prompt.split('Problem 7:')
+        for idx, question in enumerate(questions):
+            if idx < len(rets):
+                acc_rets = np.mean(rets[idx:])
+                question = question + f' REWARD: {rets[idx]:.3f}' + f' RETURN TO GO: {acc_rets:.3f}'
+            if idx > 0:                
+                questions[idx] = 'Problem 7.' + question
+            else:
+                questions[idx] = question
         if reward_type == 'mean':
             cur_ret = np.mean(rets)
         elif reward_type == 'accumulated':   
             cur_ret = 0        
             for reward in returns:        
                 cur_ret = discount * cur_ret + reward - penalty
-        # new_paths[path] = (questions, cur_ret)
+        new_paths[path] = (questions, cur_ret)
         answer_dict[path[0]].append(cur_ret)
     average_answer_dict = dict()
     for key, value in answer_dict.items():
@@ -106,9 +96,8 @@ def main(log_dir:str='logs/test/gsm8k_mcts_LLaMA-7B-HF/2023-0731-2103 temperatur
         if f"{log_dir}/params_.json" in all_files:
             all_files.remove(f"{log_dir}/params_.json")
         json_files = sorted(all_files)[:num_examples]        
-        # print(len(json_files))
+        print(len(json_files))
         n_aggr_correct = 0
-        correct_problems = []
         for n, json_file in enumerate(pbar := tqdm(json_files)):
             pickle_file = json_file.replace('.json', '.pkl')
             with open(json_file) as j_f, open(pickle_file, 'rb') as p_f:
@@ -119,9 +108,7 @@ def main(log_dir:str='logs/test/gsm8k_mcts_LLaMA-7B-HF/2023-0731-2103 temperatur
             output, correct, cum_reward, conf, reward_sum, paths = aggregate(pickle_info, json_info['answer'], agg_fcn, params)     
             n_aggr_correct += int(correct)
             pbar.set_description(f'{n_aggr_correct}/{n+1}={n_aggr_correct/ (n+1):.3f}')
-            if correct:
-                correct_problems.append(n)
         print(f'{agg_type} aggregate correct: {n_aggr_correct}, that is {n_aggr_correct / (n+1):.3f} percent')
-        print(correct_problems)
+
 if __name__ == '__main__':
     fire.Fire(main)

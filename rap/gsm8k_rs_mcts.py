@@ -103,9 +103,13 @@ class ReasoningMCTSNode(MCTSNode):
         depth = self.depth - 1
         generated_text = self.prompt.split(f'Problem:\n')[-1].split('\n')
         if self.depth > 1:
-            question = f'Step {self.depth-1}: ' + generated_text[-2]
+            question = f'Step {self.depth-1}: '
+            if len(generated_text) >= 2:
+                question += generated_text[-2]
         elif self.depth == 1:
-            question = 'Problem: ' + generated_text[-3]
+            question = 'Problem: '
+            if len(generated_text) >=3:
+                question += generated_text[-3]
             depth = 1            
         pprint(p1 + question)
         acc_reward += discount ** (self.depth - 2) * self.reward

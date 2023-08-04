@@ -92,7 +92,7 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
               n_sample_confidence=8, # 8
               temperature=.4,
               max_depth=6,  #6
-              w_exp=3,
+              w_exp=1,
               resume=0,
               finish=101,
               log_dir=None,
@@ -140,8 +140,8 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
     with open(log_dir + "/params.json", "w") as f:
         json.dump(params, f, indent=2)
 
-    # torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
     local_rank = 0
     # local_rank, world_size = setup_model_parallel()
 
@@ -169,10 +169,10 @@ def main_mcts(llama_ckpt='/media/backup/michaelf/ckpts/llamas/LLaMA-7B-HF', #'ll
         if i < resume:
             continue
         ##  set random seed
-        # random.seed(seed)
-        # np.random.seed(seed)
-        # torch.manual_seed(seed)
-        # torch.cuda.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
         
         question = example['question']
         answer = example['answer']
